@@ -1,4 +1,6 @@
-import skeleton.*;
+package space;
+
+import space.MainScreen;
 
 /**
  * @author Yanis Biziuk

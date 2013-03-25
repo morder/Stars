@@ -1,3 +1,5 @@
+package space;
+
 import skeleton.*;
 
 /**

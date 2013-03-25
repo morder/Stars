@@ -5,6 +5,9 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.input.GestureDetector;
 
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  * @author Yanis Biziuk
  */
@@ -62,13 +65,15 @@ public abstract class Window{
 
     protected Screen mParentScreen;
     protected SpriteBatch mSpriteBatch = new SpriteBatch();
-    protected GestureDetector.GestureListener mGesturesListener;
+    //protected GestureDetector.GestureListener mGesturesListener;
     protected WindowController mWindowController;
     protected TickThread mTickThread;
 
     protected OrthographicCamera mCamera;
-    protected int mScreenWidth;
-    protected int mScreenHeight;
+    public int mScreenWidth;
+    public int mScreenHeight;
+
+    private final LinkedList<TextureObject> mObjects = new LinkedList<TextureObject>();
 
     public Window(Screen screen){
         mParentScreen = screen;
@@ -86,14 +91,64 @@ public abstract class Window{
         return mParentScreen;
     }
 
-    protected void render () {
+    public void removeObjectFromStack(TextureObject object){
+        synchronized (mObjects){
+            mObjects.remove(object);
+        }
+    }
+
+    public void removeObjectFromStack(List<? extends TextureObject> objects){
+        synchronized (mObjects){
+            mObjects.removeAll(objects);
+        }
+    }
+
+    public void addObjectToStack(TextureObject object, TextureObject before){
+        synchronized (mObjects){
+            if (before != null){
+                int index = mObjects.indexOf(before);
+                mObjects.add(index, object);
+            } else {
+                mObjects.addLast(object);
+            }
+        }
+    }
+
+    public void addObjectToStack(List<? extends TextureObject> objects, TextureObject before){
+        synchronized (mObjects){
+            if (before != null){
+                int index = mObjects.indexOf(before);
+                for(TextureObject object: objects){
+                    mObjects.add(index, object);
+                }
+            } else {
+                mObjects.addAll(objects);
+            }
+
+        }
+    }
+
+    public LinkedList<TextureObject> getListenObjects(){
+        return (LinkedList<TextureObject>) mObjects.clone();
+    }
+
+    protected final void render () {
         mSpriteBatch.begin();
+
+        synchronized (mObjects){
+            for (TextureObject obj: mObjects){
+                if (obj.isVisible()){
+                    obj.render(mSpriteBatch);
+                }
+            }
+        }
+
         mSpriteBatch.end();
     }
 
-    protected GestureDetector.GestureListener getInputProcessor(){
+    /*protected GestureDetector.GestureListener getInputProcessor(){
         return null;
-    }
+    }*/
 
     protected WindowController getController(){
         return null;
@@ -101,7 +156,7 @@ public abstract class Window{
 
     public void init(){
         mWindowController = getController();
-        mGesturesListener = getInputProcessor();
+        //mGesturesListener = getInputProcessor();
 
         if (mWindowController != null){ // create thread, and execute tick's
             mTickThread = new TickThread();
@@ -112,5 +167,7 @@ public abstract class Window{
     public void close(){
 
     }
+
+
 }
 
